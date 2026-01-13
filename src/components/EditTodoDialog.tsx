@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { Loader2, Tag as TagIcon, Check, Plus, Palette } from "lucide-react"
+import { Loader2, Tag as TagIcon, Check, Plus, Palette, X, CheckSquare } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { COLORS } from "@/lib/constants"
 import { ImageUpload } from "@/components/ui/image-upload"
@@ -30,7 +30,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import type { Todo, Tag } from "@/types"
+import type { Todo, Tag, ChecklistItem } from "@/types"
 
 interface EditTodoDialogProps {
   todo: Todo
@@ -50,6 +50,9 @@ export function EditTodoDialog({ todo, availableTags, open, onOpenChange, onSave
   const [imagePreview, setImagePreview] = useState<string | null>(todo.image_url || null)
   const [loading, setLoading] = useState(false)
   const [openCombobox, setOpenCombobox] = useState(false)
+  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>(todo.checklist || [])
+  const [newChecklistItem, setNewChecklistItem] = useState('')
+  const [isChecklistOpen, setIsChecklistOpen] = useState(false)
   
   const { user } = useAuth()
   const isReadOnly = !user || user.id !== todo.user_id
@@ -68,6 +71,9 @@ export function EditTodoDialog({ todo, availableTags, open, onOpenChange, onSave
       setSelectedImage(null)
       setImagePreview(todo.image_url || null)
       setError(null)
+      setChecklistItems(todo.checklist || [])
+      setNewChecklistItem('')
+      setIsChecklistOpen(false)
     }
   }, [open, todo])
 
@@ -93,6 +99,27 @@ export function EditTodoDialog({ todo, availableTags, open, onOpenChange, onSave
           toggleTag(data)
           setSearch('')
       }
+  }
+
+  const addChecklistItem = () => {
+    if (!newChecklistItem.trim()) return
+    const newItem: ChecklistItem = {
+      id: uuidv4(),
+      text: newChecklistItem.trim(),
+      completed: false
+    }
+    setChecklistItems([...checklistItems, newItem])
+    setNewChecklistItem('')
+  }
+
+  const removeChecklistItem = (id: string) => {
+    setChecklistItems(checklistItems.filter(item => item.id !== id))
+  }
+
+  const toggleChecklistItem = (id: string) => {
+    setChecklistItems(checklistItems.map(item => 
+      item.id === id ? { ...item, completed: !item.completed } : item
+    ))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -130,7 +157,8 @@ export function EditTodoDialog({ todo, availableTags, open, onOpenChange, onSave
             description: description.trim() || undefined,
             tags: selectedTags,
             color: selectedColor,
-            image_url: imageUrl
+            image_url: imageUrl,
+            checklist: checklistItems
         })
         onOpenChange(false)
     } catch (error) {
@@ -166,6 +194,60 @@ export function EditTodoDialog({ todo, availableTags, open, onOpenChange, onSave
                     className="min-h-[100px] resize-none"
                 />
             </div>
+
+            {(isChecklistOpen || checklistItems.length > 0) && (
+              <div className="space-y-2 p-2 bg-muted/30 rounded-md">
+                {checklistItems.map((item) => (
+                  <div key={item.id} className="flex items-center gap-2 group">
+                    <button
+                      type="button"
+                      onClick={() => !isReadOnly && toggleChecklistItem(item.id)}
+                      disabled={isReadOnly}
+                      className={cn(
+                        "h-4 w-4 border rounded-sm flex items-center justify-center transition-colors",
+                        item.completed ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground",
+                         isReadOnly && "cursor-default"
+                      )}
+                    >
+                      {item.completed && <Check className="h-3 w-3" />}
+                    </button>
+                    <span className={cn(
+                      "flex-1 text-sm",
+                      item.completed && "line-through text-muted-foreground"
+                    )}>
+                      {item.text}
+                    </span>
+                    {!isReadOnly && (
+                    <button
+                      type="button"
+                      onClick={() => removeChecklistItem(item.id)}
+                      className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                    )}
+                  </div>
+                ))}
+                
+                {!isReadOnly && (
+                <div className="flex items-center gap-2">
+                  <Plus className="h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={newChecklistItem}
+                    onChange={(e) => setNewChecklistItem(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        addChecklistItem()
+                      }
+                    }}
+                    placeholder="List item"
+                    className="flex-1 h-8 text-sm border-0 bg-transparent focus-visible:ring-0 p-0 placeholder:text-muted-foreground"
+                  />
+                </div>
+                )}
+              </div>
+            )}
 
             <div className="space-y-2">
                 <ImageUpload 
@@ -279,6 +361,18 @@ export function EditTodoDialog({ todo, availableTags, open, onOpenChange, onSave
                   </PopoverContent>
                 </Popover>
                 )}
+            <Button 
+                type="button"
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setIsChecklistOpen(!isChecklistOpen)}
+                className={cn(
+                  "h-6 w-6 p-0 rounded-full border shadow-sm hover:bg-muted",
+                  (isChecklistOpen || checklistItems.length > 0) && "bg-muted"
+                )}
+            >
+                <CheckSquare className="h-3 w-3 text-muted-foreground opacity-50" />
+            </Button>
             </div>
 
             {error && (

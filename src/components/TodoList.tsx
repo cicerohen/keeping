@@ -4,7 +4,8 @@ import { useAuth } from "@/context/AuthContext";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { EditTodoDialog } from "@/components/EditTodoDialog";
 
 import { useState } from "react";
@@ -22,6 +23,8 @@ interface TodoListProps {
   viewMode: "grid" | "list";
   onTagCreated: () => void;
 }
+
+const CHECKLIST_PREVIEW_LIMIT = 4;
 
 export function TodoList({
   todos,
@@ -94,6 +97,43 @@ export function TodoList({
                       {tag.name}
                     </Badge>
                   ))}
+                </div>
+              )}
+              {todo.checklist && todo.checklist.length > 0 && (
+                <div className="w-full pt-1 space-y-1">
+                  {todo.checklist.slice(0, CHECKLIST_PREVIEW_LIMIT).map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-start gap-2 group/item"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const newChecklist = todo.checklist!.map(i =>
+                          i.id === item.id ? { ...i, completed: !i.completed } : i
+                        );
+                        onTodoUpdate(todo.id, { checklist: newChecklist });
+                      }}
+                    >
+                      <div className={cn(
+                        "mt-0.5 h-3 w-3 rounded-sm border flex items-center justify-center transition-colors shrink-0 cursor-pointer",
+                        item.completed
+                          ? "bg-primary border-primary text-primary-foreground"
+                          : "border-muted-foreground/50 group-hover/item:border-primary/50"
+                      )}>
+                        {item.completed && <Check className="h-2 w-2" />}
+                      </div>
+                      <span className={cn(
+                        "text-xs leading-tight transition-colors cursor-pointer select-none",
+                        item.completed ? "text-muted-foreground line-through" : "text-foreground"
+                      )}>
+                        {item.text}
+                      </span>
+                    </div>
+                  ))}
+                  {todo.checklist.length > CHECKLIST_PREVIEW_LIMIT && (
+                     <div className="text-[10px] text-muted-foreground pl-5 pt-0.5">
+                        +{todo.checklist.length - CHECKLIST_PREVIEW_LIMIT} more items
+                     </div>
+                  )}
                 </div>
               )}
               <p className="text-[10px] text-gray-400 pt-0.5">

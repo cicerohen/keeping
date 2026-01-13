@@ -4,12 +4,13 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { supabase } from '@/lib/supabase'
-import { Plus, Loader2, Tag as TagIcon, Check, Palette, PenTool } from "lucide-react"
+import { Plus, Loader2, Tag as TagIcon, Check, Palette, PenTool, X, CheckSquare } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { COLORS } from "@/lib/constants"
 import { ImageUpload } from "@/components/ui/image-upload"
 import { DrawingCanvas } from "@/components/ui/drawing-canvas"
 import { v4 as uuidv4 } from 'uuid'
+import type { Tag, ChecklistItem } from "@/types"
 import {
   Dialog,
   DialogContent,
@@ -29,7 +30,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import type { Tag } from "@/types"
+
 
 export function AddTodo({ onTodoAdded, onTagCreated, availableTags }: { onTodoAdded: () => void, onTagCreated: () => void, availableTags: Tag[] }) {
   const [title, setTitle] = useState('')
@@ -42,6 +43,9 @@ export function AddTodo({ onTodoAdded, onTagCreated, availableTags }: { onTodoAd
   const [isExpanded, setIsExpanded] = useState(false)
   const [openCombobox, setOpenCombobox] = useState(false)
   const [isDrawingOpen, setIsDrawingOpen] = useState(false)
+  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([])
+  const [newChecklistItem, setNewChecklistItem] = useState('')
+  const [isChecklistOpen, setIsChecklistOpen] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
 
   // Close form when clicking outside
@@ -53,7 +57,7 @@ export function AddTodo({ onTodoAdded, onTagCreated, availableTags }: { onTodoAd
     }
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [title, description, selectedTags, openCombobox])
+  }, [title, description, selectedTags, openCombobox, checklistItems])
 
   const toggleTag = (tag: Tag) => {
     if (selectedTags.some(t => t.id === tag.id)) {
@@ -96,7 +100,8 @@ export function AddTodo({ onTodoAdded, onTagCreated, availableTags }: { onTodoAd
         description: description.trim() || null,
 
         color: selectedColor,
-        image_url: imageUrl
+        image_url: imageUrl,
+        checklist: checklistItems
       }])
       .select()
       .single()
@@ -135,6 +140,9 @@ export function AddTodo({ onTodoAdded, onTagCreated, availableTags }: { onTodoAd
     setSelectedImage(null)
     setImagePreview(null)
     setIsExpanded(false)
+    setChecklistItems([])
+    setNewChecklistItem('')
+    setIsChecklistOpen(false)
     onTodoAdded()
   }
 
@@ -146,6 +154,9 @@ export function AddTodo({ onTodoAdded, onTagCreated, availableTags }: { onTodoAd
       setSelectedImage(null)
       setImagePreview(null)
       setIsExpanded(false)
+      setChecklistItems([])
+      setNewChecklistItem('')
+      setIsChecklistOpen(false)
   }
   
   const handleDrawingSave = (blob: Blob) => {
@@ -171,6 +182,27 @@ export function AddTodo({ onTodoAdded, onTagCreated, availableTags }: { onTodoAd
           toggleTag(data)
           setSearch('')
       }
+  }
+
+  const addChecklistItem = () => {
+    if (!newChecklistItem.trim()) return
+    const newItem: ChecklistItem = {
+      id: uuidv4(),
+      text: newChecklistItem.trim(),
+      completed: false
+    }
+    setChecklistItems([...checklistItems, newItem])
+    setNewChecklistItem('')
+  }
+
+  const removeChecklistItem = (id: string) => {
+    setChecklistItems(checklistItems.filter(item => item.id !== id))
+  }
+
+  const toggleChecklistItem = (id: string) => {
+    setChecklistItems(checklistItems.map(item => 
+      item.id === id ? { ...item, completed: !item.completed } : item
+    ))
   }
 
   return (
@@ -216,6 +248,54 @@ export function AddTodo({ onTodoAdded, onTagCreated, availableTags }: { onTodoAd
                 disabled={loading}
                 className="min-h-[80px] border-0 focus-visible:ring-0 p-2 resize-none text-sm bg-muted/30"
             />
+
+            {(isChecklistOpen || checklistItems.length > 0) && (
+              <div className="space-y-2 p-2 bg-muted/30 rounded-md">
+                {checklistItems.map((item) => (
+                  <div key={item.id} className="flex items-center gap-2 group">
+                    <button
+                      type="button"
+                      onClick={() => toggleChecklistItem(item.id)}
+                      className={cn(
+                        "h-4 w-4 border rounded-sm flex items-center justify-center transition-colors",
+                        item.completed ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground"
+                      )}
+                    >
+                      {item.completed && <Check className="h-3 w-3" />}
+                    </button>
+                    <span className={cn(
+                      "flex-1 text-sm",
+                      item.completed && "line-through text-muted-foreground"
+                    )}>
+                      {item.text}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeChecklistItem(item.id)}
+                      className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+                
+                <div className="flex items-center gap-2">
+                  <Plus className="h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={newChecklistItem}
+                    onChange={(e) => setNewChecklistItem(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        addChecklistItem()
+                      }
+                    }}
+                    placeholder="List item"
+                    className="flex-1 h-8 text-sm border-0 bg-transparent focus-visible:ring-0 p-0 placeholder:text-muted-foreground"
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="px-1">
                 <ImageUpload 
@@ -329,6 +409,17 @@ export function AddTodo({ onTodoAdded, onTagCreated, availableTags }: { onTodoAd
                 className="h-6 w-6 p-0 rounded-full border shadow-sm hover:bg-muted"
             >
                 <PenTool className="h-3 w-3 text-muted-foreground" />
+            </Button>
+            <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setIsChecklistOpen(!isChecklistOpen)}
+                className={cn(
+                  "h-6 w-6 p-0 rounded-full border shadow-sm hover:bg-muted",
+                  (isChecklistOpen || checklistItems.length > 0) && "bg-muted"
+                )}
+            >
+                <CheckSquare className="h-3 w-3 text-muted-foreground" />
             </Button>
             </div>
 
