@@ -2,6 +2,9 @@
 
 **Keeping** is a modern task management application built to help you stay organized and productive. It features a clean, responsive interface for managing your todos, organizing them with tags, and tracking your progress.
 
+> [!NOTE]
+> This project was created to learn and test AI coding capabilities using React (Vite) and Supabase. It serves as a playground for exploring these technologies.
+
 ## Tech Stack
 
 - **Frontend Framework:** [React](https://react.dev/)
