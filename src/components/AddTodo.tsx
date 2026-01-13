@@ -4,11 +4,18 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { supabase } from '@/lib/supabase'
-import { Plus, Loader2, Tag as TagIcon, Check, Palette } from "lucide-react"
+import { Plus, Loader2, Tag as TagIcon, Check, Palette, PenTool } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { COLORS } from "@/lib/constants"
 import { ImageUpload } from "@/components/ui/image-upload"
+import { DrawingCanvas } from "@/components/ui/drawing-canvas"
 import { v4 as uuidv4 } from 'uuid'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   Command,
   CommandEmpty,
@@ -34,6 +41,7 @@ export function AddTodo({ onTodoAdded, onTagCreated, availableTags }: { onTodoAd
   const [loading, setLoading] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [openCombobox, setOpenCombobox] = useState(false)
+  const [isDrawingOpen, setIsDrawingOpen] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
 
   // Close form when clicking outside
@@ -138,6 +146,13 @@ export function AddTodo({ onTodoAdded, onTagCreated, availableTags }: { onTodoAd
       setSelectedImage(null)
       setImagePreview(null)
       setIsExpanded(false)
+  }
+  
+  const handleDrawingSave = (blob: Blob) => {
+    const file = new File([blob], "drawing.png", { type: "image/png" })
+    setSelectedImage(file)
+    setImagePreview(URL.createObjectURL(file))
+    setIsDrawingOpen(false)
   }
 
   const [search, setSearch] = useState('')
@@ -307,6 +322,14 @@ export function AddTodo({ onTodoAdded, onTagCreated, availableTags }: { onTodoAd
                       </div>
                   </PopoverContent>
                 </Popover>
+            <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setIsDrawingOpen(true)}
+                className="h-6 w-6 p-0 rounded-full border shadow-sm hover:bg-muted"
+            >
+                <PenTool className="h-3 w-3 text-muted-foreground" />
+            </Button>
             </div>
 
             <div className="flex items-center justify-end space-x-2 pt-1 border-t border-border/40">
@@ -335,6 +358,19 @@ export function AddTodo({ onTodoAdded, onTagCreated, availableTags }: { onTodoAd
             </div>
         </div>
       )}
+      <Dialog open={isDrawingOpen} onOpenChange={setIsDrawingOpen}>
+        <DialogContent className="max-w-3xl w-full h-[80vh] p-0 overflow-hidden sm:max-w-[90vw]">
+          <DialogHeader className="px-4 py-2 border-b hidden">
+            <DialogTitle>Draw</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 h-full w-full bg-white">
+            <DrawingCanvas 
+                onSave={handleDrawingSave} 
+                onCancel={() => setIsDrawingOpen(false)} 
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </form>
   )
 }
