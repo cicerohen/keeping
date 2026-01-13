@@ -220,6 +220,7 @@ function TodoApp() {
                         onTodoDelete={handleDeleteTodo}
                         onTagClick={setFilterTag}
                         viewMode={viewMode}
+                        onTagCreated={fetchAll}
                     />
                 )}
             </div>

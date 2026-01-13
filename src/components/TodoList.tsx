@@ -18,6 +18,7 @@ interface TodoListProps {
   onTodoDelete: (id: string) => Promise<void>;
   onTagClick: (tag: string) => void;
   viewMode: "grid" | "list";
+  onTagCreated: () => void;
 }
 
 export function TodoList({
@@ -27,6 +28,7 @@ export function TodoList({
   onTodoDelete,
   onTagClick,
   viewMode,
+  onTagCreated,
 }: TodoListProps) {
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
 
@@ -122,6 +124,7 @@ export function TodoList({
           open={!!editingTodo}
           onOpenChange={(open) => !open && setEditingTodo(null)}
           onSave={onTodoUpdate}
+          onTagCreated={onTagCreated}
         />
       )}
     </div>

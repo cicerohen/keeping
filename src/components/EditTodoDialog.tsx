@@ -37,9 +37,10 @@ interface EditTodoDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSave: (id: string, updates: Partial<Todo> & { tags?: Tag[] }) => Promise<void>
+  onTagCreated: () => void
 }
 
-export function EditTodoDialog({ todo, availableTags, open, onOpenChange, onSave }: EditTodoDialogProps) {
+export function EditTodoDialog({ todo, availableTags, open, onOpenChange, onSave, onTagCreated }: EditTodoDialogProps) {
   const [title, setTitle] = useState(todo.title)
   const [description, setDescription] = useState(todo.description || '')
   const [selectedTags, setSelectedTags] = useState<Tag[]>(todo.tags || [])
@@ -71,6 +72,22 @@ export function EditTodoDialog({ todo, availableTags, open, onOpenChange, onSave
     } else {
         setSelectedTags([...selectedTags, tag])
     }
+  }
+
+  const handleCreateTag = async () => {
+      if (!search.trim()) return
+      
+      const { data, error } = await supabase
+        .from('tags')
+        .insert([{ name: search.trim() }])
+        .select()
+        .single()
+        
+      if (data && !error) {
+          onTagCreated()
+          toggleTag(data)
+          setSearch('')
+      }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -182,8 +199,17 @@ export function EditTodoDialog({ todo, availableTags, open, onOpenChange, onSave
                                 onValueChange={setSearch}
                             />
                             <CommandList>
-                                <CommandEmpty className="py-2 px-2 text-center text-sm text-muted-foreground">
-                                    No tags found.
+                                <CommandEmpty className="py-2 px-2 text-center text-sm">
+                                    <p className="text-muted-foreground mb-2">No tags found.</p>
+                                    <Button 
+                                        size="sm" 
+                                        variant="outline" 
+                                        className="h-7 w-full text-xs"
+                                        onClick={handleCreateTag}
+                                        type="button"
+                                    >
+                                        Create "{search}"
+                                    </Button>
                                 </CommandEmpty>
                                 <CommandGroup>
                                     {availableTags.map((tag) => (
