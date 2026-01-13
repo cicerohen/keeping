@@ -227,7 +227,7 @@ export function AddTodo({ onTodoAdded, onTagCreated, availableTags }: { onTodoAd
         </div>
         <Input
           type="text"
-          placeholder={isExpanded ? "What needs to be done?" : "Add a new task..."}
+          placeholder={isExpanded ? "What needs to be done?" : "Add a new note..."}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onFocus={() => setIsExpanded(true)}
@@ -442,7 +442,7 @@ export function AddTodo({ onTodoAdded, onTagCreated, availableTags }: { onTodoAd
                     </>
                 ) : (
                     <>
-                        Add Task
+                        Add Note
                     </>
                 )}
                 </Button>

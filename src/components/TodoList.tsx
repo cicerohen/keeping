@@ -42,7 +42,7 @@ export function TodoList({
   if (todos.length === 0) {
     return (
       <div className="text-center text-gray-500 py-8">
-        No tasks matched your criteria.
+        No notes matched your criteria.
       </div>
     );
   }
@@ -66,7 +66,7 @@ export function TodoList({
             <div className="w-full h-32 mb-3 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
               <img
                 src={todo.image_url}
-                alt="Task attachment"
+                alt="Note attachment"
                 className="w-full h-full object-cover"
               />
             </div>

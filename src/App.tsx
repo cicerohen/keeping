@@ -146,10 +146,8 @@ function TodoApp() {
             <div className="space-y-1 relative">
                 <div className="flex justify-between items-start">
                     <div>
-                        <h1 className="text-2xl font-semibold tracking-tight">Today's Tasks</h1>
-                        <p className="text-sm text-muted-foreground">
-                            Manage your daily goals and stay organized.
-                        </p>
+                        <h1 className="text-2xl font-semibold tracking-tight">My Notes</h1>
+
                     </div>
 
                     <div className="flex items-center gap-2">

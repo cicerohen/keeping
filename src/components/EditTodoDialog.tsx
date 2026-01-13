@@ -173,12 +173,12 @@ export function EditTodoDialog({ todo, availableTags, open, onOpenChange, onSave
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] transition-colors duration-200" style={{ backgroundColor: selectedColor }}>
         <DialogHeader>
-          <DialogTitle>{isReadOnly ? "Task Details" : "Edit Task"}</DialogTitle>
+          <DialogTitle>{isReadOnly ? "Note Details" : "Edit Note"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
             <div className="space-y-2">
                 <Input
-                    placeholder="Task title"
+                    placeholder="Note title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     disabled={loading || isReadOnly}
