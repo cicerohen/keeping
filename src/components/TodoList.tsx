@@ -107,6 +107,7 @@ export function TodoList({
                       className="flex items-start gap-2 group/item"
                       onClick={(e) => {
                         e.stopPropagation();
+                        if (!user || user.id !== todo.user_id) return;
                         const newChecklist = todo.checklist!.map(i =>
                           i.id === item.id ? { ...i, completed: !i.completed } : i
                         );
@@ -114,15 +115,17 @@ export function TodoList({
                       }}
                     >
                       <div className={cn(
-                        "mt-0.5 h-3 w-3 rounded-sm border flex items-center justify-center transition-colors shrink-0 cursor-pointer",
+                        "mt-0.5 h-3 w-3 rounded-sm border flex items-center justify-center transition-colors shrink-0",
+                        user?.id === todo.user_id ? "cursor-pointer" : "cursor-default",
                         item.completed
                           ? "bg-primary border-primary text-primary-foreground"
-                          : "border-muted-foreground/50 group-hover/item:border-primary/50"
+                          : "border-muted-foreground/50" + (user?.id === todo.user_id ? " group-hover/item:border-primary/50" : "")
                       )}>
                         {item.completed && <Check className="h-2 w-2" />}
                       </div>
                       <span className={cn(
-                        "text-xs leading-tight transition-colors cursor-pointer select-none",
+                        "text-xs leading-tight transition-colors select-none",
+                        user?.id === todo.user_id ? "cursor-pointer" : "cursor-default",
                         item.completed ? "text-muted-foreground line-through" : "text-foreground"
                       )}>
                         {item.text}
