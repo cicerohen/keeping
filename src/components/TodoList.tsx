@@ -55,15 +55,9 @@ export function TodoList({
       {todos.map((todo) => (
         <Card
           key={todo.id}
-          className={`p-4 flex flex-col items-start justify-between transition-colors break-inside-avoid mb-4 ${
-            user && user.id === todo.user_id ? "cursor-pointer" : ""
-          }`}
+          className="p-4 flex flex-col items-start justify-between transition-colors break-inside-avoid mb-4 cursor-pointer"
           style={{ backgroundColor: todo.color || "#ffffff" }}
-          onClick={() => {
-            if (user && user.id === todo.user_id) {
-              setEditingTodo(todo);
-            }
-          }}
+          onClick={() => setEditingTodo(todo)}
         >
           {todo.image_url && (
             <div className="w-full h-32 mb-3 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useAuth } from "@/context/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -49,6 +50,10 @@ export function EditTodoDialog({ todo, availableTags, open, onOpenChange, onSave
   const [imagePreview, setImagePreview] = useState<string | null>(todo.image_url || null)
   const [loading, setLoading] = useState(false)
   const [openCombobox, setOpenCombobox] = useState(false)
+  
+  const { user } = useAuth()
+  const isReadOnly = !user || user.id !== todo.user_id
+
   const [search, setSearch] = useState('')
 
   const [error, setError] = useState<string | null>(null)
@@ -140,7 +145,7 @@ export function EditTodoDialog({ todo, availableTags, open, onOpenChange, onSave
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] transition-colors duration-200" style={{ backgroundColor: selectedColor }}>
         <DialogHeader>
-          <DialogTitle>Edit Task</DialogTitle>
+          <DialogTitle>{isReadOnly ? "Task Details" : "Edit Task"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
             <div className="space-y-2">
@@ -148,7 +153,7 @@ export function EditTodoDialog({ todo, availableTags, open, onOpenChange, onSave
                     placeholder="Task title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    disabled={loading}
+                    disabled={loading || isReadOnly}
                     className="text-base"
                 />
             </div>
@@ -157,7 +162,7 @@ export function EditTodoDialog({ todo, availableTags, open, onOpenChange, onSave
                     placeholder="Description (optional)" 
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    disabled={loading}
+                    disabled={loading || isReadOnly}
                     className="min-h-[100px] resize-none"
                 />
             </div>
@@ -173,11 +178,12 @@ export function EditTodoDialog({ todo, availableTags, open, onOpenChange, onSave
                         setSelectedImage(null)
                         setImagePreview(null)
                     }}
-                    disabled={loading}
+                    disabled={loading || isReadOnly}
                 />
             </div>
 
             <div className="flex flex-wrap gap-2 items-center min-h-[40px] p-2 bg-muted/30 rounded-md border">
+                {!isReadOnly && (
                 <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
                     <PopoverTrigger asChild>
                         <Button
@@ -234,16 +240,20 @@ export function EditTodoDialog({ todo, availableTags, open, onOpenChange, onSave
                         </Command>
                     </PopoverContent>
                 </Popover>
+                )}
 
                 {selectedTags.map(tag => (
                     <Badge key={tag.id} variant="secondary" className="px-1.5 py-0 h-5 text-xs gap-1 font-normal cursor-default">
                         {tag.name}
+                        {!isReadOnly && (
                         <button type="button" onClick={() => toggleTag(tag)} className="hover:text-destructive transition-colors">
                              <Plus className="h-3 w-3 rotate-45" />
                         </button>
+                        )}
                     </Badge>
                 ))}
 
+                {!isReadOnly && (
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button variant="ghost" size="sm" className="h-6 w-6 p-0 rounded-full border shadow-sm" style={{ backgroundColor: selectedColor }}>
@@ -268,6 +278,7 @@ export function EditTodoDialog({ todo, availableTags, open, onOpenChange, onSave
                       </div>
                   </PopoverContent>
                 </Popover>
+                )}
             </div>
 
             {error && (
@@ -277,8 +288,9 @@ export function EditTodoDialog({ todo, availableTags, open, onOpenChange, onSave
             )}
             <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-                    Cancel
+                    {isReadOnly ? "Close" : "Cancel"}
                 </Button>
+                {!isReadOnly && (
                 <Button type="submit" disabled={loading || !title.trim()}>
                     {loading ? (
                         <>
@@ -289,6 +301,7 @@ export function EditTodoDialog({ todo, availableTags, open, onOpenChange, onSave
                         'Save Changes'
                     )}
                 </Button>
+                )}
             </DialogFooter>
         </form>
       </DialogContent>
