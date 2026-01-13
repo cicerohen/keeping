@@ -1,0 +1,271 @@
+import { useState, useEffect } from 'react'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Loader2, Tag as TagIcon, Check, Plus, Palette } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { COLORS } from "@/lib/constants"
+import { ImageUpload } from "@/components/ui/image-upload"
+import { v4 as uuidv4 } from 'uuid'
+import { supabase } from "@/lib/supabase"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import type { Todo, Tag } from "@/types"
+
+interface EditTodoDialogProps {
+  todo: Todo
+  availableTags: Tag[]
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSave: (id: string, updates: Partial<Todo> & { tags?: Tag[] }) => Promise<void>
+}
+
+export function EditTodoDialog({ todo, availableTags, open, onOpenChange, onSave }: EditTodoDialogProps) {
+  const [title, setTitle] = useState(todo.title)
+  const [description, setDescription] = useState(todo.description || '')
+  const [selectedTags, setSelectedTags] = useState<Tag[]>(todo.tags || [])
+  const [selectedColor, setSelectedColor] = useState(todo.color || COLORS[0].value)
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(todo.image_url || null)
+  const [loading, setLoading] = useState(false)
+  const [openCombobox, setOpenCombobox] = useState(false)
+  const [search, setSearch] = useState('')
+
+  const [error, setError] = useState<string | null>(null)
+
+  // Reset state when todo changes or dialog opens
+  useEffect(() => {
+    if (open) {
+      setTitle(todo.title)
+      setDescription(todo.description || '')
+      setSelectedTags(todo.tags || [])
+      setSelectedColor(todo.color || COLORS[0].value)
+      setSelectedImage(null)
+      setImagePreview(todo.image_url || null)
+      setError(null)
+    }
+  }, [open, todo])
+
+  const toggleTag = (tag: Tag) => {
+    if (selectedTags.some(t => t.id === tag.id)) {
+        setSelectedTags(selectedTags.filter(t => t.id !== tag.id))
+    } else {
+        setSelectedTags([...selectedTags, tag])
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!title.trim()) return
+
+    setLoading(true)
+    setError(null)
+    
+    try {
+        let imageUrl = todo.image_url
+
+        // Handle image upload if changed
+        if (selectedImage) {
+             const fileExt = selectedImage.name.split('.').pop()
+             const fileName = `${uuidv4()}.${fileExt}`
+             const { error: uploadError } = await supabase.storage
+               .from('task-images')
+               .upload(fileName, selectedImage)
+     
+             if (uploadError) throw uploadError
+     
+             const { data: { publicUrl } } = supabase.storage
+               .from('task-images')
+               .getPublicUrl(fileName)
+             
+             imageUrl = publicUrl
+        } else if (imagePreview === null && todo.image_url) {
+            // Image was removed
+            imageUrl = null
+        }
+
+        await onSave(todo.id, {
+            title: title.trim(),
+            description: description.trim() || undefined,
+            tags: selectedTags,
+            color: selectedColor,
+            image_url: imageUrl
+        })
+        onOpenChange(false)
+    } catch (error) {
+        console.error('Failed to update todo:', error)
+        setError(error instanceof Error ? error.message : 'Failed to update todo')
+    } finally {
+        setLoading(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px] transition-colors duration-200" style={{ backgroundColor: selectedColor }}>
+        <DialogHeader>
+          <DialogTitle>Edit Task</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 py-2">
+            <div className="space-y-2">
+                <Input
+                    placeholder="Task title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    disabled={loading}
+                    className="text-base"
+                />
+            </div>
+            <div className="space-y-2">
+                <Textarea 
+                    placeholder="Description (optional)" 
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    disabled={loading}
+                    className="min-h-[100px] resize-none"
+                />
+            </div>
+
+            <div className="space-y-2">
+                <ImageUpload 
+                    value={imagePreview}
+                    onChange={(file) => {
+                        setSelectedImage(file)
+                        setImagePreview(URL.createObjectURL(file))
+                    }}
+                    onRemove={() => {
+                        setSelectedImage(null)
+                        setImagePreview(null)
+                    }}
+                    disabled={loading}
+                />
+            </div>
+
+            <div className="flex flex-wrap gap-2 items-center min-h-[40px] p-2 bg-muted/30 rounded-md border">
+                <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                    <PopoverTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            role="combobox"
+                            aria-expanded={openCombobox}
+                            className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
+                        >
+                            <TagIcon className="h-3 w-3" />
+                            Add tags...
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[200px] p-0" align="start">
+                        <Command>
+                            <CommandInput 
+                                placeholder="Search tags..." 
+                                className="h-8" 
+                                value={search}
+                                onValueChange={setSearch}
+                            />
+                            <CommandList>
+                                <CommandEmpty className="py-2 px-2 text-center text-sm text-muted-foreground">
+                                    No tags found.
+                                </CommandEmpty>
+                                <CommandGroup>
+                                    {availableTags.map((tag) => (
+                                        <CommandItem
+                                            key={tag.id}
+                                            value={tag.name}
+                                            onSelect={() => toggleTag(tag)}
+                                        >
+                                            <div className="mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary">
+                                                <Check
+                                                    className={cn(
+                                                        "h-3 w-3",
+                                                        selectedTags.some(t => t.id === tag.id) ? "opacity-100" : "opacity-0"
+                                                    )}
+                                                />
+                                            </div>
+                                            {tag.name}
+                                        </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                            </CommandList>
+                        </Command>
+                    </PopoverContent>
+                </Popover>
+
+                {selectedTags.map(tag => (
+                    <Badge key={tag.id} variant="secondary" className="px-1.5 py-0 h-5 text-xs gap-1 font-normal cursor-default">
+                        {tag.name}
+                        <button type="button" onClick={() => toggleTag(tag)} className="hover:text-destructive transition-colors">
+                             <Plus className="h-3 w-3 rotate-45" />
+                        </button>
+                    </Badge>
+                ))}
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 rounded-full border shadow-sm" style={{ backgroundColor: selectedColor }}>
+                        <Palette className="h-3 w-3 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-2" align="start">
+                      <div className="flex gap-1">
+                          {COLORS.map(color => (
+                              <button
+                                  key={color.value}
+                                  type="button"
+                                  className={cn(
+                                      "w-6 h-6 rounded-full border transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                                      selectedColor === color.value ? "ring-2 ring-ring ring-offset-2" : ""
+                                  )}
+                                  style={{ backgroundColor: color.value }}
+                                  onClick={() => setSelectedColor(color.value)}
+                                  title={color.name}
+                              />
+                          ))}
+                      </div>
+                  </PopoverContent>
+                </Popover>
+            </div>
+
+            {error && (
+              <div className="text-sm font-medium text-destructive px-1">
+                {error}
+              </div>
+            )}
+            <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+                    Cancel
+                </Button>
+                <Button type="submit" disabled={loading || !title.trim()}>
+                    {loading ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving
+                        </>
+                    ) : (
+                        'Save Changes'
+                    )}
+                </Button>
+            </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
