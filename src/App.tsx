@@ -1,7 +1,6 @@
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
-import { PrivateRoute } from '@/components/PrivateRoute'
 import Login from '@/pages/Login'
 import SignUp from '@/pages/SignUp'
 import { AddTodo } from '@/components/AddTodo'
@@ -32,7 +31,6 @@ function TodoApp() {
   }
 
   const fetchTodos = async () => {
-    if (!user) return;
     
     // Fetch todos with their tags
     // Supabase join syntax: todos(*, tags:todo_tags(tags(*))) 
@@ -78,7 +76,7 @@ function TodoApp() {
 
   useEffect(() => {
     fetchAll()
-  }, [user])
+  }, [])
 
   const handleUpdateTodo = async (id: string, updates: Partial<Todo> & { tags?: Tag[] }) => {
     // 1. Optimistic Update
@@ -188,9 +186,11 @@ function TodoApp() {
                 )}
             </div>
             
-            <div className="max-w-2xl mx-auto w-full">
-                <AddTodo onTodoAdded={fetchTodos} onTagCreated={fetchAll} availableTags={availableTags} />
-            </div>
+            {user && (
+                <div className="max-w-2xl mx-auto w-full">
+                    <AddTodo onTodoAdded={fetchTodos} onTagCreated={fetchAll} availableTags={availableTags} />
+                </div>
+            )}
             
             <div className="pt-2">
                 {loading ? (
@@ -237,11 +237,7 @@ function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
-            <Route path="/" element={
-              <PrivateRoute>
-                <TodoApp />
-              </PrivateRoute>
-            } />
+            <Route path="/" element={<TodoApp />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Router>

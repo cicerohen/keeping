@@ -7,7 +7,15 @@ export function Header() {
   const { user } = useAuth()
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+    } catch (error) {
+      console.error('Error signing out:', error)
+      // Force reload/cleanup if server signout implies 403 or other issues
+      localStorage.removeItem('sb-tqnjarqzaipecejrppeb-auth-token') // Attempt to clear known token key if possible, but reload is safer
+      window.location.reload()
+    }
   }
 
   return (
@@ -21,7 +29,7 @@ export function Header() {
         </div>
         
         <div className="flex items-center space-x-4">
-            {user && (
+            {user ? (
                 <>
                     <span className="text-sm text-muted-foreground hidden md:inline-block">
                         {user.email}
@@ -31,6 +39,10 @@ export function Header() {
                         <span className="sr-only">Logout</span>
                     </Button>
                 </>
+            ) : (
+                <Button variant="default" size="sm" asChild>
+                    <a href="/login">Login</a>
+                </Button>
             )}
         </div>
       </div>

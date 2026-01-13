@@ -1,4 +1,6 @@
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/context/AuthContext";
+
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +33,8 @@ export function TodoList({
   onTagCreated,
 }: TodoListProps) {
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
+  const { user } = useAuth();
+
 
   if (todos.length === 0) {
     return (
@@ -51,9 +55,15 @@ export function TodoList({
       {todos.map((todo) => (
         <Card
           key={todo.id}
-          className="p-4 flex flex-col items-start justify-between transition-colors cursor-pointer break-inside-avoid mb-4"
+          className={`p-4 flex flex-col items-start justify-between transition-colors break-inside-avoid mb-4 ${
+            user && user.id === todo.user_id ? "cursor-pointer" : ""
+          }`}
           style={{ backgroundColor: todo.color || "#ffffff" }}
-          onClick={() => setEditingTodo(todo)}
+          onClick={() => {
+            if (user && user.id === todo.user_id) {
+              setEditingTodo(todo);
+            }
+          }}
         >
           {todo.image_url && (
             <div className="w-full h-32 mb-3 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
@@ -101,19 +111,21 @@ export function TodoList({
               </p>
             </div>
           </div>
-          <div className="flex gap-1 items-start w-full justify-end mt-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                onTodoDelete(todo.id);
-              }}
-              className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+          {user && user.id === todo.user_id && (
+            <div className="flex gap-1 items-start w-full justify-end mt-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTodoDelete(todo.id);
+                }}
+                className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </Card>
       ))}
 
