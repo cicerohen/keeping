@@ -169,7 +169,7 @@ function TodoApp() {
                                 <List className="h-4 w-4" />
                             </button>
                         </div>
-                        <TagManager onTagsChange={fetchAll} />
+                        {user && <TagManager onTagsChange={fetchAll} />}
                     </div>
                 </div>
                 
